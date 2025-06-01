@@ -1,49 +1,62 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Suivi des Symptômes</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 2rem; max-width: 600px; margin: auto; background-color: #f9f9f9; }
-    h1 { text-align: center; color: #333; }
-    form, ul { background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    label { display: block; margin-top: 1rem; }
-    input, select { width: 100%; padding: 0.5rem; margin-top: 0.25rem; }
-    button { margin-top: 1rem; padding: 0.5rem 1rem; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    button:hover { background-color: #0056b3; }
-    .message { margin-top: 1rem; font-weight: bold; }
-    ul { margin-top: 2rem; list-style-type: none; padding-left: 0; }
-    li { margin: 0.5rem 0; padding: 0.5rem; background-color: #eee; border-radius: 4px; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      border-radius: 8px;
+      background-color: #f0f0f0;
+    }
+    input, select, button {
+      display: block;
+      margin-top: 10px;
+      padding: 8px;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
-  <h1>📋 Suivi des Symptômes</h1>
-
+  <h1>🩺 Suivi des Symptômes</h1>
   <form id="symptom-form">
-    <label for="date">Date</label>
-    <input type="date" id="date" required>
+    <label>Date</label>
+    <input type="date" id="date" required />
 
-    <label for="type">Type de symptôme</label>
-    <input type="text" id="type" placeholder="ex: fièvre, toux..." required>
+    <label>Type de symptôme</label>
+    <input type="text" id="type" required />
 
-    <label for="intensity">Intensité</label>
-    <select id="intensity" required>
+    <label>Intensité</label>
+    <select id="intensity">
       <option value="faible">Faible</option>
-      <option value="modérée">Modérée</option>
-      <option value="élevée">Élevée</option>
+      <option value="moyenne">Moyenne</option>
+      <option value="forte">Forte</option>
     </select>
 
     <button type="submit">Ajouter</button>
-    <div class="message" id="message"></div>
   </form>
 
-  <h2>📊 Historique des Symptômes</h2>
+  <h2>📋 Liste des symptômes</h2>
   <ul id="symptom-list"></ul>
 
   <script>
     const form = document.getElementById('symptom-form');
     const list = document.getElementById('symptom-list');
-    const message = document.getElementById('message');
+
+    async function loadSymptoms() {
+      const res = await fetch('/api/get-symptoms');
+      const data = await res.json();
+      list.innerHTML = '';
+      data.forEach(s => {
+        const li = document.createElement('li');
+        li.textContent = `${s.date} - ${s.type} (${s.intensity})`;
+        list.appendChild(li);
+      });
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -51,38 +64,17 @@
       const type = document.getElementById('type').value;
       const intensity = document.getElementById('intensity').value;
 
-      try {
-        const res = await fetch('/api/add-symptom', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ date, type, intensity })
-        });
+      await fetch('/api/add-symptom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, type, intensity })
+      });
 
-        const data = await res.json();
-        message.textContent = data.message || data.error || "Symptôme ajouté.";
-        form.reset();
-        loadSymptoms();
-      } catch (err) {
-        message.textContent = "Erreur lors de l'envoi.";
-      }
+      form.reset();
+      loadSymptoms();
     });
 
-    async function loadSymptoms() {
-      list.innerHTML = "";
-      try {
-        const res = await fetch('/api/get-symptoms');
-        const data = await res.json();
-        data.reverse().forEach(item => {
-          const li = document.createElement('li');
-          li.textContent = `${item.date} – ${item.type} (${item.intensity})`;
-          list.appendChild(li);
-        });
-      } catch (err) {
-        list.innerHTML = "<li>Erreur lors du chargement des symptômes.</li>";
-      }
-    }
-
-    window.onload = loadSymptoms;
+    loadSymptoms();
   </script>
 </body>
 </html>
